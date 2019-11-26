@@ -3,6 +3,7 @@ const app = express()
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const cors = require('cors')
+const Contact = require('./models/contact.js')
 
 
 app.use(express.static('build'))
@@ -17,80 +18,96 @@ morgan.token('post', function getData(req) {
  
 })
 
-let contacts = [
-    {
-        "persons": [
-          { name: 'Arto Hellas', number: '040-123456' , id : 1},
-          { name: 'Ada Lovelace', number: '39-44-5323523', id : 2 },
-          { name: 'Dan Abramov', number: '12-43-234345', id : 3 },
-          { name: 'Mary Poppendieck', number: '39-23-6423122', id : 4 }
-        ]
-      }
-]
+
 
 
 
 app.get('/api/persons', (req, res) => {
-    res.json(contacts)
+  Contact.find({}).then(contacts => {
+    res.json(contacts.map(contact => contact.toJSON()))
+    
+  })
 })
 
 app.get('/info', (req, res) => {
     const date = new Date()
+    Contact.find({}).then(result => {
+      res.send(`<p>Phonebook has info for ${result.length} people</p> <p>${date}</p>`)
+    })
     
-    res.send(`<p>Phonebook has info for ${contacts[0].persons.length} people</p> <p>${date}</p>`)
+    
   })
 
   app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    contacts[0].persons = contacts[0].persons.filter(contact => contact.id !== id)
-    console.log(contacts)
+    console.log(req.params.id)
+    
+    
+    Contact.findByIdAndRemove(req.params.id).then(() =>{
+      return res.status(204).end()
+      
+    }
+      
+    ).catch(error =>{
+      console.log(error)
+    })
+    
+    
   
-    res.status(204).end()
+ 
   })
 
 app.get('/api/persons/:id', (req, res) => {
     
-    const id = Number(req.params.id)
-    const contact = contacts[0].persons.find(contact => contact.id === id)
-    if(contact){
-        res.json(contact)
-    }else{
-        res.status(404).end()
-    }
+    Contact.findById(req.params.id).then(contact => {
+      res.json(contact.toJSON())
+    }).catch(error =>{
+      res.status(404).end()
+    })
+    
    
 })
 
-app.post('/api/persons', (req, res) => {
-    const newContact = req.body
+app.post('/api/persons', (req, res, next) => {
+  const body = req.body
+  console.log(body)
 
- 
-    if(newContact.name == null || newContact.number == null){
-      return res.status(400).json({
-        error: "Nimi tai numero puuttuu"
-      })
-    }
-
-    const names = contacts[0].persons.map(person => person.name.toLowerCase())
-    const contains = names.includes(newContact.name.toLowerCase())
-
-    if(contains){
-      return res.status(400).json({
-        error: "Nimi löytyy jo luettelosta"
-      })
-    }else{
-     
-      const id = Math.floor(Math.random() * 10000)
-      const finalContact = {
-        name : newContact.name,
-        number : newContact.number,
-        id: id
-      }
-      contacts[0].persons = contacts[0].persons.concat(finalContact)
-  
-      res.json(finalContact)
-    }
-    
+  const contact = new Contact({
+    name: body.name,
+    number: body.number,
+    id : Math.floor(Math.random() * 1000)
   })
+
+  contact.save().then(savedContact => {
+    res.json(savedContact.toJSON())
+  }).catch(error => next(error))
+})
+
+app.put('/api/persons/:id', (req, res, next) => {
+  const body = req.body
+  
+  const contact = {
+    name: body.name,
+    number: body.number
+  }
+ 
+  Contact.findByIdAndUpdate(req.params.id, contact, { new: true })
+    .then(updatedContact => {
+      res.json(updatedContact.toJSON())
+    })
+    .catch(error => next(error))
+})
+const errorHandler = (error, request, response, next) => {
+  if (error.name === 'CastError' && error.kind == 'ObjectId') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
+  }else{
+    console.log(error)
+  }
+  next(error)
+
+}
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
