@@ -1,0 +1,17 @@
+#notification{
+    border: 0.5em solid green;
+    background-color: gray;
+    color: green;
+    height: 6em;
+    font-size: 2em;
+
+}
+
+#error{
+    border: 0.5em solid red;
+    background-color: gray;
+    color: red;
+    height: 6em;
+    font-size: 2em;
+
+}
