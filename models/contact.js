@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 const uniqueValidator = require('mongoose-unique-validator')
 
-const url = `mongodb+srv://fullstack:S1tac1o6@cluster0-miwda.mongodb.net/phonebook?retryWrites=true&w=majority`
+const url = `mongodb+srv://fullstack:<Salasana>@cluster0-miwda.mongodb.net/phonebook?retryWrites=true&w=majority`
 mongoose.connect(url, { useNewUrlParser: true, useFindAndModify : false })
 
 const contactSchema = new mongoose.Schema({
